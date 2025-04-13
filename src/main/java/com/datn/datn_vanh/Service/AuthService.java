@@ -1,5 +1,6 @@
 package com.datn.datn_vanh.Service;
 
+import com.datn.datn_vanh.CustomException.EmailExistsException;
 import com.datn.datn_vanh.Dto.Auth.LoginDto;
 import com.datn.datn_vanh.Dto.Auth.RegisterDto;
 import com.datn.datn_vanh.Entity.Token;
@@ -36,7 +37,8 @@ public class AuthService {
                 .whereEqualTo("email", request.getEmail()).get();
 
         if (!future.get().isEmpty()) {
-            throw new RuntimeException("Email đã tồn tại.");
+            logger.info("Trùng Email");
+            throw new EmailExistsException("Email đã tồn tại.");
         }
 
         User newUser = new User(

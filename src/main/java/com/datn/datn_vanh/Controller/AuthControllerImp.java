@@ -1,5 +1,6 @@
 package com.datn.datn_vanh.Controller;
 
+import com.datn.datn_vanh.CustomException.EmailExistsException;
 import com.datn.datn_vanh.Dto.Auth.LoginDto;
 import com.datn.datn_vanh.Dto.Auth.RegisterDto;
 import com.datn.datn_vanh.Service.AuthService;
@@ -23,8 +24,10 @@ public class AuthControllerImp implements AuthController {
     public ResponseEntity<?> register(@RequestBody RegisterDto request) {
         try {
             return ResponseEntity.ok(authService.register(request));
+        } catch (EmailExistsException ex) {
+            throw ex;
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
