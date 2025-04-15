@@ -10,7 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.datn.datn_vanh")
 public class DatnVanhApplication {
 
 	public static void main(String[] args) {
