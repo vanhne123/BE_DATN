@@ -25,6 +25,7 @@ public class FireBaseConfig {
 
             FirebaseOptions options = new FirebaseOptions.Builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                    .setDatabaseUrl("https://dacn-ktmt-default-rtdb.firebaseio.com")
                     .build();
 
             if (FirebaseApp.getApps().isEmpty()) {

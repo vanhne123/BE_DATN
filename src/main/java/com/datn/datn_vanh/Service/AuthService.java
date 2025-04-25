@@ -50,7 +50,7 @@ public class AuthService {
         );
 
         db.collection("Users").document(request.getEmail()).set(newUser);
-        logger.info("Tạo tài khoản thành công" + request.getEmail());
+        logger.info("Tạo tài khoản thành công " + request.getEmail());
         return "Tạo tài khoản thành công";
     }
 
