@@ -1,12 +1,17 @@
 package com.datn.datn_vanh.Controller;
 
+import com.datn.datn_vanh.Dto.Employee.Employee;
 import com.datn.datn_vanh.Service.RecognitionService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -30,19 +35,26 @@ public class TestController {
     @GetMapping("/recognitions")
     public ResponseEntity<Object> getRecognitionsFromFirebase() {
         try {
-            // Lấy dữ liệu từ Firebase thông qua CompletableFuture
             CompletableFuture<Object> future = recognitionService.getAllRecognitions();
+            Object rawData = future.join();
 
-            // Chờ kết quả từ CompletableFuture (sẽ không chặn luồng)
-            Object recognitionsData = future.get(); // Hoặc future.join() nếu bạn muốn tránh exception
+            // Ép kiểu dữ liệu thành Map<String, Map<String, Map<String, Object>>>
+            Map<String, Map<String, Map<String, Object>>> rootMap = (Map<String, Map<String, Map<String, Object>>>) rawData;
+            List<Employee> resultList = new ArrayList<>();
 
-            if (recognitionsData != null) {
-                return ResponseEntity.ok(recognitionsData); // Trả về dữ liệu nếu có
-            } else {
-                return ResponseEntity.status(404).body("No recognitions found.");
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            for (Map<String, Map<String, Object>> dateEntries : rootMap.values()) {
+                for (Map<String, Object> record : dateEntries.values()) {
+                    Employee dto = objectMapper.convertValue(record, Employee.class);
+                    resultList.add(dto);
+                }
             }
-        } catch (ExecutionException | InterruptedException e) {
-            return ResponseEntity.status(500).body("Error retrieving recognitions data: " + e.getMessage());
+
+            return ResponseEntity.ok(resultList);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error retrieving recognitions: " + e.getMessage());
         }
     }
+
 }
