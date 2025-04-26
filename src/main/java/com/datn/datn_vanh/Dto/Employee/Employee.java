@@ -12,5 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Employee {
     private String name;
-    private String employeeCode;
+    private String employee_id;
+    private String timestamp;
 }
