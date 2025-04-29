@@ -1,4 +1,4 @@
-package com.datn.datn_vanh.Controller;
+package com.datn.datn_vanh.Controller.Auth;
 
 import com.datn.datn_vanh.Dto.Auth.LoginDto;
 import com.datn.datn_vanh.Dto.Auth.RegisterDto;

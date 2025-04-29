@@ -1,6 +1,7 @@
 package com.datn.datn_vanh.Dto.Employee;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,8 +11,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Employee {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class EmployeeDto {
+    private Long id;
     private String name;
-    private String employee_id;
-    private String timestamp;
+    private String dob;
+    private String created_at;
 }
