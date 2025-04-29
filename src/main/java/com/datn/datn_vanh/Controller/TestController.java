@@ -1,6 +1,6 @@
 package com.datn.datn_vanh.Controller;
 
-import com.datn.datn_vanh.Dto.Employee.Employee;
+import com.datn.datn_vanh.Dto.Employee.EmployeeDto;
 import com.datn.datn_vanh.Service.RecognitionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("/api/test")
@@ -40,13 +39,13 @@ public class TestController {
 
             // Ép kiểu dữ liệu thành Map<String, Map<String, Map<String, Object>>>
             Map<String, Map<String, Map<String, Object>>> rootMap = (Map<String, Map<String, Map<String, Object>>>) rawData;
-            List<Employee> resultList = new ArrayList<>();
+            List<EmployeeDto> resultList = new ArrayList<>();
 
             ObjectMapper objectMapper = new ObjectMapper();
 
             for (Map<String, Map<String, Object>> dateEntries : rootMap.values()) {
                 for (Map<String, Object> record : dateEntries.values()) {
-                    Employee dto = objectMapper.convertValue(record, Employee.class);
+                    EmployeeDto dto = objectMapper.convertValue(record, EmployeeDto.class);
                     resultList.add(dto);
                 }
             }
