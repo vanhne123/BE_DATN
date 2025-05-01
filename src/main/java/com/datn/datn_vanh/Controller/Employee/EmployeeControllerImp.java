@@ -47,8 +47,10 @@ public class EmployeeControllerImp implements EmployeeController{
                     try {
                         // Chuyển Map thành EmployeeDto
                         EmployeeDto employee = objectMapper.convertValue(dataEntry, EmployeeDto.class);
-                        employee.setId(Long.parseLong(employeeId));
-                        resultList.add(employee);
+                        if (Boolean.TRUE.equals(employee.getIsActivated())) {
+                            employee.setId(Long.parseLong(employeeId));
+                            resultList.add(employee);
+                        }
                     } catch (Exception e) {
                         logger.error("Lỗi khi chuyển đổi dữ liệu nhân viên với ID: {}", employeeId, e);
                     }
@@ -64,4 +66,38 @@ public class EmployeeControllerImp implements EmployeeController{
 
 
     }
+
+    @Override
+    public EmployeeDto getEmployeeById(String employeeId) {
+        if (employeeId == null) {
+            logger.warn("employeeId null, không thể truy xuất nhân viên.");
+            return null;
+        }
+
+        CompletableFuture<Object> future = employeeService.getEmployeeById(employeeId);
+        Object rawData = future.join();
+
+        if (rawData == null) {
+            logger.warn("Không tìm thấy nhân viên với ID: {}", employeeId);
+            return null;
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        EmployeeDto employeeDto = objectMapper.convertValue(rawData, EmployeeDto.class);
+        employeeDto.setId(Long.parseLong(employeeId));
+        return employeeDto;
+    }
+
+    @Override
+    public void getEmployeeById(EmployeeDto body) {
+        employeeService.deleteEmployee(body);
+        logger.info("Update employee successfully");
+    }
+
+    @Override
+    public void deleteEmployeeById(String employeeId) {
+        employeeService.deleteEmployee(Long.valueOf(employeeId));
+        logger.info("Delete employee successfully");
+    }
+
 }

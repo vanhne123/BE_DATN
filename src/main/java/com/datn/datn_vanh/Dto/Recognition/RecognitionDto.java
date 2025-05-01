@@ -1,4 +1,4 @@
-package com.datn.datn_vanh.Dto.Employee;
+package com.datn.datn_vanh.Dto.Recognition;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -12,11 +12,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class EmployeeDto {
-    private Long id;
-    private String name;
-    private String dob;
-    private String created_at;
-    private String avatar;
-    private Boolean isActivated;
+public class RecognitionDto {
+    private long id;
+    private String url;
+    private String created;
 }

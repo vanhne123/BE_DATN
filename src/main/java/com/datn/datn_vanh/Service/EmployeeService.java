@@ -3,7 +3,7 @@ package com.datn.datn_vanh.Service;
 import com.datn.datn_vanh.Dto.Employee.EmployeeDto;
 import com.datn.datn_vanh.ENUM.Reference;
 import com.datn.datn_vanh.Security.JwtUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.Firestore;
 import com.google.firebase.cloud.FirestoreClient;
 import com.google.firebase.database.*;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 
 @Service
 public class EmployeeService {
@@ -51,40 +51,102 @@ public class EmployeeService {
     }
 
 
-    public CompletableFuture<EmployeeDto> getEmployeeById(String employeeId) {
-        CompletableFuture<EmployeeDto> future = new CompletableFuture<>();
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("employees");
+    public CompletableFuture<Object> getEmployeeById(String employeeId) {
+        CompletableFuture<Object> future = new CompletableFuture<>();
+        DatabaseReference reference = FirebaseDatabase
+                .getInstance()
+                .getReference(Reference.EMPLOYEE_PATH)
+                .child(employeeId); // Lấy node cụ thể
 
-        reference.child(employeeId).addListenerForSingleValueEvent(new ValueEventListener() {
+        reference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (dataSnapshot.exists()) {
-                    EmployeeDto employee = dataSnapshot.getValue(EmployeeDto.class);
-                    if (employee != null) {
-                        employee.setId(Long.parseLong(employeeId)); // Set ID vì Firebase có thể không lưu ID bên trong
-                        future.complete(employee); // Hoàn thành future với dữ liệu nhân viên
-                    } else {
-                        future.completeExceptionally(new Exception("Không chuyển đổi được dữ liệu nhân viên."));
-                    }
+                    future.complete(dataSnapshot.getValue());
+                    logger.info("Lấy dữ liệu thành công cho employeeId: {}", employeeId);
                 } else {
-                    future.completeExceptionally(new Exception("Không tìm thấy nhân viên với ID: " + employeeId));
+                    future.complete(null);
+                    logger.warn("Không tìm thấy employeeId: {}", employeeId);
                 }
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                future.completeExceptionally(new Exception("Lỗi khi truy vấn Firebase: " + databaseError.getMessage()));
+                future.completeExceptionally(
+                        new Exception("Lỗi khi lấy dữ liệu từ Firebase: " + databaseError.getMessage())
+                );
+                logger.error("Lỗi Firebase với employeeId {}: {}", employeeId, databaseError.getMessage());
             }
         });
 
         return future;
     }
-//try {
-//    EmployeeDto employee = getEmployeeById("401862").get(); // .get() sẽ đợi future hoàn thành
-//    System.out.println("Nhân viên tìm được: " + employee);
-//} catch (Exception e) {
-//    System.err.println("Không tìm thấy nhân viên: " + e.getMessage());
-//}
+
+    public void deleteEmployee(EmployeeDto body) {
+        if (body.getId() == null) {
+            logger.warn("employeeId null, không thể cập nhật.");
+            return;
+        }
+
+        DatabaseReference ref = FirebaseDatabase.getInstance()
+                .getReference("employees")
+                .child(String.valueOf(body.getId()));
+
+        Map<String, Object> updates = new HashMap<>();
+        if (body.getDob() != null) {
+            updates.put("dob", body.getDob());
+        }
+        if (body.getName() != null) {
+            updates.put("name", body.getName());
+        }
+
+        if (updates.isEmpty()) {
+            logger.info("Không có trường nào cần cập nhật cho employeeId: {}", body.getId());
+            return;
+        }
+
+        ApiFuture<Void> future = ref.updateChildrenAsync(updates);
+
+        future.addListener(() -> {
+            try {
+                future.get(); // Nếu có exception, nó sẽ được ném ở đây
+                logger.info("Đã cập nhật dob và name cho employeeId: {}", body.getId());
+            } catch (Exception e) {
+                logger.error("Lỗi khi cập nhật employeeId {}: {}", body.getId(), e.getMessage(), e);
+            }
+        }, Executors.newSingleThreadExecutor());
+
+    }
+
+    /*
+    soft delete
+     */
+    public void deleteEmployee(Long employeeId) {
+        if (employeeId == null) {
+            logger.warn("employeeId null, không thể cập nhật.");
+            return;
+        }
+
+        DatabaseReference ref = FirebaseDatabase.getInstance()
+                .getReference("employees")
+                .child(String.valueOf(employeeId));
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("isActivated", false);
+
+        ApiFuture<Void> future = ref.updateChildrenAsync(updates);
+
+        future.addListener(() -> {
+            try {
+                future.get(); // Nếu có exception, nó sẽ được ném ở đây
+                logger.info("Đã xóa cho employeeId: {}", employeeId);
+            } catch (Exception e) {
+                logger.error("Lỗi khi xóa employeeId {}: {}", employeeId, e.getMessage(), e);
+            }
+        }, Executors.newSingleThreadExecutor());
+
+    }
+
 
 
 
