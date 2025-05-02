@@ -1,4 +1,4 @@
-package com.datn.datn_vanh.Controller;
+package com.datn.datn_vanh.Controller.Auth;
 
 import com.datn.datn_vanh.CustomException.EmailExistsException;
 import com.datn.datn_vanh.Dto.Auth.LoginDto;
@@ -6,7 +6,6 @@ import com.datn.datn_vanh.Dto.Auth.RegisterDto;
 import com.datn.datn_vanh.Service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

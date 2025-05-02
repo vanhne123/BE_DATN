@@ -25,8 +25,8 @@ COPY target/classes/jsonTemplateLayout.json /app/config/jsonTemplateLayout.json
 ENV TZ=Asia/Ho_Chi_Minh
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Mở port 8080
-EXPOSE 8080
+# Mở port 2608
+EXPOSE 2608
 
 # Chạy bằng JarLauncher để boot từ layer
 ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
