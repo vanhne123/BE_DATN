@@ -24,7 +24,7 @@ public class JwtUtil {
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 1 ngày
+                .setExpiration(new Date(System.currentTimeMillis() + 900000 )) // 5 phút
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

@@ -18,5 +18,8 @@ public class EmployeeDto {
     private String dob;
     private String created_at;
     private String avatar;
+    private String email;
+    private String phone;
+    private String salary_level;
     private Boolean isActivated;
 }

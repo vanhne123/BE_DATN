@@ -15,7 +15,7 @@ public interface EmployeeController {
     public EmployeeDto getEmployeeById(@RequestParam String employeeId);
 
     @PutMapping("/updateEmployeeById")
-    public void getEmployeeById(@RequestBody EmployeeDto body);
+    public void updateEmployeeById(@RequestBody EmployeeDto body);
 
     @DeleteMapping("/deleteEmployeeById")
     public void deleteEmployeeById(@RequestParam String employeeId);

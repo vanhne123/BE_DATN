@@ -89,8 +89,8 @@ public class EmployeeControllerImp implements EmployeeController{
     }
 
     @Override
-    public void getEmployeeById(EmployeeDto body) {
-        employeeService.deleteEmployee(body);
+    public void updateEmployeeById(EmployeeDto body) {
+        employeeService.updateEmployee(body);
         logger.info("Update employee successfully");
     }
 

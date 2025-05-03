@@ -10,12 +10,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.sql.Timestamp;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/recogni")
@@ -79,7 +81,11 @@ public class RecognitionControllerImp implements RecognitionController{
             logger.error("Lỗi khi xử lý dữ liệu nhận diện", e);
         }
 
-        return resultList;
+
+        return resultList.stream()
+                .sorted(Comparator.comparing(RecognitionDto::getCreated).reversed())
+                .collect(Collectors.toList());
+
     }
 
     @Override
