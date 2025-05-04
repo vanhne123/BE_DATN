@@ -3,6 +3,7 @@ package com.datn.datn_vanh.Controller.Recognitions;
 import com.datn.datn_vanh.Dto.Recognition.RecognitionDto;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -12,4 +13,8 @@ public interface RecognitionController {
 
     @GetMapping("/getEmployeeRecogni")
     public List<RecognitionDto> getEmployeeRecogni(@RequestParam String employeeId);
+
+    // Đăng ký kết nối SSE
+    @GetMapping("/recognition-stream")
+    public SseEmitter streamRecognitions();
 }

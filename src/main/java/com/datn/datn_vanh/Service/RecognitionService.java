@@ -7,9 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 @Service
 public class RecognitionService {
@@ -18,8 +15,9 @@ public class RecognitionService {
 
     /**
      * Lấy tất cả dữ liệu từ nút /recognitions trong Firebase Realtime Database.
+     *
      * @return CompletableFuture chứa dữ liệu (thường là Map<String, Object> hoặc List<Object>),
-     *         hoặc null nếu không có dữ liệu hoặc có lỗi.
+     * hoặc null nếu không có dữ liệu hoặc có lỗi.
      */
     public CompletableFuture<Object> getAllRecognitions() {
         CompletableFuture<Object> future = new CompletableFuture<>();
