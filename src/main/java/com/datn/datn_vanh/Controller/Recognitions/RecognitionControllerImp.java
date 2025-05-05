@@ -257,7 +257,8 @@ public class RecognitionControllerImp implements RecognitionController {
 
         return TotalChamCong.builder()
                 .danhSach(filteredList)
-                .totalCong(filteredList.size() / 2.0f) // Tổng công = số bản ghi / 2
+                .totalCong(filteredList.size() / 2.0f)// Tổng công = số bản ghi / 2
+                .totalLuong(filteredList.size() * 5000000 / 2.0f )
                 .build();
     }
 

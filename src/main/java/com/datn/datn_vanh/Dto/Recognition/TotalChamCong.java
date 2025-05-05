@@ -16,4 +16,5 @@ import java.util.List;
 public class TotalChamCong {
     private List<RecognitionDto> danhSach;
     private Float totalCong;
+    private Float totalLuong;
 }
