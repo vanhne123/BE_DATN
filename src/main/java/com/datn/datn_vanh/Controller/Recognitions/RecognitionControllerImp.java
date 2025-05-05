@@ -2,6 +2,7 @@ package com.datn.datn_vanh.Controller.Recognitions;
 
 import com.datn.datn_vanh.Dto.Recognition.RecognitionData;
 import com.datn.datn_vanh.Dto.Recognition.RecognitionDto;
+import com.datn.datn_vanh.Dto.Recognition.TotalChamCong;
 import com.datn.datn_vanh.ENUM.Reference;
 import com.datn.datn_vanh.Security.JwtUtil;
 import com.datn.datn_vanh.Service.RecognitionService;
@@ -237,5 +238,28 @@ public class RecognitionControllerImp implements RecognitionController {
             }
         });
     }
+
+    @Override
+    public TotalChamCong filterByMonthAndYear(String id,String targetMonth, String targetYear) {
+        List<RecognitionDto> recognitions = getEmployeeRecogni(id); // Lấy danh sách từ Firebase
+
+        List<RecognitionDto> filteredList = recognitions.stream()
+                .filter(r -> {
+                    try {
+                        LocalDateTime dateTime = LocalDateTime.parse(r.getCreated(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S"));
+                        return dateTime.getMonthValue() == Integer.parseInt(targetMonth)
+                                && dateTime.getYear() == Integer.parseInt(targetYear);
+                    } catch (Exception e) {
+                        return false;
+                    }
+                })
+                .collect(Collectors.toList());
+
+        return TotalChamCong.builder()
+                .danhSach(filteredList)
+                .totalCong(filteredList.size() / 2.0f) // Tổng công = số bản ghi / 2
+                .build();
+    }
+
 
 }
