@@ -1,9 +1,12 @@
 package com.datn.datn_vanh.Controller.Recognitions;
 
+import com.datn.datn_vanh.Controller.Employee.EmployeeControllerImp;
+import com.datn.datn_vanh.Dto.Employee.EmployeeDto;
 import com.datn.datn_vanh.Dto.Recognition.RecognitionData;
 import com.datn.datn_vanh.Dto.Recognition.RecognitionDto;
 import com.datn.datn_vanh.Dto.Recognition.TotalChamCong;
 import com.datn.datn_vanh.ENUM.Reference;
+import com.datn.datn_vanh.Entity.Employee;
 import com.datn.datn_vanh.Security.JwtUtil;
 import com.datn.datn_vanh.Service.RecognitionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +35,7 @@ import java.util.stream.Collectors;
 public class RecognitionControllerImp implements RecognitionController {
 
     private final RecognitionService recognitionService;
+    private final EmployeeControllerImp employeeControllerImp;
     private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
     // Lưu trữ timestamp của các recognition đã nhận diện
 //    private final Map<String, Set<String>> seenTimestamps = new HashMap<>();
@@ -39,8 +43,9 @@ public class RecognitionControllerImp implements RecognitionController {
     private final ConcurrentLinkedQueue<String> eventCache = new ConcurrentLinkedQueue<>();
     private final CopyOnWriteArrayList<SseEmitter> emitters = new CopyOnWriteArrayList<>();
 
-    public RecognitionControllerImp(RecognitionService recognitionService) {
+    public RecognitionControllerImp(RecognitionService recognitionService,EmployeeControllerImp  employeeControllerImp) {
         this.recognitionService = recognitionService;
+        this.employeeControllerImp = employeeControllerImp;
     }
 
     @Override
@@ -242,6 +247,7 @@ public class RecognitionControllerImp implements RecognitionController {
     @Override
     public TotalChamCong filterByMonthAndYear(String id,String targetMonth, String targetYear) {
         List<RecognitionDto> recognitions = getEmployeeRecogni(id); // Lấy danh sách từ Firebase
+        EmployeeDto employee = employeeControllerImp.getEmployeeById(id);
 
         List<RecognitionDto> filteredList = recognitions.stream()
                 .filter(r -> {
@@ -258,7 +264,7 @@ public class RecognitionControllerImp implements RecognitionController {
         return TotalChamCong.builder()
                 .danhSach(filteredList)
                 .totalCong(filteredList.size() / 2.0f)// Tổng công = số bản ghi / 2
-                .totalLuong(filteredList.size() * 5000000 / 2.0f )
+                .totalLuong((float) (filteredList.size() * 500000 * Double.parseDouble(employee.getSalary_level()) / 2.0))
                 .build();
     }
 
