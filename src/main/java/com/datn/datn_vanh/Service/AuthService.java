@@ -66,7 +66,7 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) return null;
 
 
-        String token = jwtUtil.generateToken(request.getEmail());
+        String token = jwtUtil.generateToken(request.getEmail(),user.getRole());
 
         // Save token to Firestore in a collection named "tokens"
         Token tokenData =  Token.builder()

@@ -20,12 +20,13 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String email) {
+    public String generateToken(String email,String role) {
         return Jwts.builder()
-                .setSubject(email)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 900000 )) // 5 phút
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .setSubject(email) // Đặt subject là email
+                .claim("role", role) // Thêm role vào token
+                .setIssuedAt(new Date()) // Thời gian cấp token
+                .setExpiration(new Date(System.currentTimeMillis() + 900000 )) // Token hết hạn sau 15 phút
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256) // Sử dụng key để ký token
                 .compact();
     }
 
