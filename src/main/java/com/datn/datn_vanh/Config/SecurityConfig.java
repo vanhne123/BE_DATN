@@ -39,6 +39,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/recogni/recognition-stream").permitAll()
                         .requestMatchers("/recogni/**").hasAnyRole(ROLE.ADMIN, ROLE.SUPER_ADMIN)
+                        .requestMatchers("/employee/**").hasAnyRole(ROLE.ADMIN, ROLE.SUPER_ADMIN)
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
