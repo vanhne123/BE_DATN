@@ -9,11 +9,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
-
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -42,7 +40,6 @@ public class EmployeeControllerImp implements EmployeeController{
             for (Map.Entry<String, Map<String, Object>> entry : rootMap.entrySet()) {
                 String employeeId = entry.getKey();  // ID của nhân viên
                 Map<String, Object> dataEntry = entry.getValue(); // Dữ liệu nhân viên (là Map)
-
                 if (dataEntry instanceof Map) {
                     try {
                         // Chuyển Map thành EmployeeDto
@@ -62,7 +59,7 @@ public class EmployeeControllerImp implements EmployeeController{
             logger.error("Dữ liệu nhận được không phải là kiểu Map hợp lệ.");
         }
 
-        return resultList;
+        return resultList.stream().sorted(Comparator.comparing(EmployeeDto::getCreated_at).reversed()).collect(Collectors.toList());
 
 
     }
@@ -89,8 +86,8 @@ public class EmployeeControllerImp implements EmployeeController{
     }
 
     @Override
-    public void getEmployeeById(EmployeeDto body) {
-        employeeService.deleteEmployee(body);
+    public void updateEmployeeById(EmployeeDto body) {
+        employeeService.updateEmployee(body);
         logger.info("Update employee successfully");
     }
 

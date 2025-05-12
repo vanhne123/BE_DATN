@@ -23,10 +23,24 @@ import java.util.List;
 public class JwtFilter extends OncePerRequestFilter {
         @Autowired
         private JwtUtil jwtUtil;
+    private static final List<String> WHITELIST = List.of(
+            "/auth/login",
+            "/auth/register",
+            "/recogni/recognition-stream"
+    );
+
+
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+        String path = request.getRequestURI();
+
+        if (WHITELIST.contains(path)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
 
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {

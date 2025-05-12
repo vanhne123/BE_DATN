@@ -82,7 +82,7 @@ public class EmployeeService {
         return future;
     }
 
-    public void deleteEmployee(EmployeeDto body) {
+    public void updateEmployee(EmployeeDto body) {
         if (body.getId() == null) {
             logger.warn("employeeId null, không thể cập nhật.");
             return;
@@ -98,6 +98,15 @@ public class EmployeeService {
         }
         if (body.getName() != null) {
             updates.put("name", body.getName());
+        }
+        if (body.getEmail() != null) {
+            updates.put("email", body.getEmail());
+        }
+        if (body.getPhone() != null) {
+            updates.put("phone", body.getPhone());
+        }
+        if (body.getSalary_level() != null) {
+            updates.put("salary_level", body.getSalary_level());
         }
 
         if (updates.isEmpty()) {

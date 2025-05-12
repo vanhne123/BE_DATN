@@ -13,8 +13,10 @@ public class WebConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("*")
-                        .allowedMethods("*");
+                        .allowedOrigins("http://localhost:3000") // chỉ định origin chính xác
+                        .allowedMethods("*")
+                        .allowedHeaders("*") // cho phép tất cả headers, bao gồm Authorization
+                        .allowCredentials(true); // cần thiết nếu dùng cookie hoặc token
             }
         };
     }
