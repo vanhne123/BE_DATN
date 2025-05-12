@@ -22,5 +22,5 @@ public interface RecognitionController {
     public SseEmitter streamRecognitions();
 
     @GetMapping("/getRecogniByMonthandYear")
-    public TotalChamCong filterByMonthAndYear(@RequestParam String id, @RequestParam String targetMonth, @RequestParam String targetYear);
+    public List<TotalChamCong> filterByMonthAndYear(@RequestParam String targetMonth, @RequestParam String targetYear);
 }
