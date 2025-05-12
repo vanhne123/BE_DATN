@@ -14,7 +14,12 @@ import java.util.List;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TotalChamCong {
+
+
+    private String id;
+    private String name;// Định nghĩa id với kiểu dữ liệu String
     private List<RecognitionDto> danhSach;
     private Float totalCong;
-    private Float totalLuong;
+    private Float totalLuong;// Danh sách các RecognitionDto
+
 }

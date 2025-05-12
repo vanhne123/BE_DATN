@@ -175,7 +175,7 @@ public class RecognitionControllerImp implements RecognitionController {
     // API để client kết nối
     @Override
     public SseEmitter streamRecognitions() {
-        SseEmitter emitter = new SseEmitter();
+        SseEmitter emitter = new SseEmitter(0L);
         emitters.add(emitter);
 
         emitter.onCompletion(() -> removeEmitter(emitter));
@@ -185,6 +185,16 @@ public class RecognitionControllerImp implements RecognitionController {
         sendCachedEventsOnReconnect(emitter);
 
         return emitter;
+    }
+    @Scheduled(fixedRate = 1000)
+    public void sendHeartbeat() {
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event().name("heartbeat").data("ping"));
+            } catch (IOException e) {
+                removeEmitter(emitter);
+            }
+        }
     }
 
     // Xóa emitter khỏi danh sách khi có lỗi hoặc khi kết nối hoàn tất
@@ -208,10 +218,11 @@ public class RecognitionControllerImp implements RecognitionController {
         }
     }
 
-    @Scheduled(fixedRate = 1000)//sau 1s
+    private String lastSentTimestamp = "";
+
+    @Scheduled(fixedRate = 1000)
     public void checkNewRecognitions() {
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference(Reference.RECOGNITIONS_PATH);
-
         ref.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
@@ -224,16 +235,18 @@ public class RecognitionControllerImp implements RecognitionController {
                         String timestamp = timeSnap.getKey();
                         String imageUrl = (String) timeSnap.child("image_url").getValue();
 
-                        recognitions.add(new RecognitionData(employeeId, timestamp, imageUrl));
+                        // Chỉ lấy bản ghi mới
+                        if (timestamp.compareTo(lastSentTimestamp) > 0) {
+                            recognitions.add(new RecognitionData(employeeId, timestamp, imageUrl));
+                        }
                     }
                 }
 
-                // Sắp xếp giảm dần theo timestamp
-                recognitions = recognitions.stream()
-                        .sorted(Comparator.comparing(RecognitionData::getTimestamp))
-                        .collect(Collectors.toList());
+                // Sắp xếp tăng dần rồi gửi
+                recognitions.sort(Comparator.comparing(RecognitionData::getTimestamp));
                 for (RecognitionData data : recognitions) {
                     sendRecognitionEvent(data.getEmployeeId(), data.getTimestamp(), data.getImageUrl());
+                    lastSentTimestamp = data.getTimestamp(); // Cập nhật sau khi gửi
                 }
             }
 
@@ -244,29 +257,62 @@ public class RecognitionControllerImp implements RecognitionController {
         });
     }
 
+
     @Override
-    public TotalChamCong filterByMonthAndYear(String id,String targetMonth, String targetYear) {
-        List<RecognitionDto> recognitions = getEmployeeRecogni(id); // Lấy danh sách từ Firebase
-        EmployeeDto employee = employeeControllerImp.getEmployeeById(id);
+    public List<TotalChamCong> filterByMonthAndYear(String targetMonth, String targetYear) {
+        List<EmployeeDto> employees = employeeControllerImp.getAllEmployee(); // Lấy tất cả nhân viên
+        List<TotalChamCong> result = new ArrayList<>();
 
-        List<RecognitionDto> filteredList = recognitions.stream()
-                .filter(r -> {
-                    try {
-                        LocalDateTime dateTime = LocalDateTime.parse(r.getCreated(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S"));
-                        return dateTime.getMonthValue() == Integer.parseInt(targetMonth)
-                                && dateTime.getYear() == Integer.parseInt(targetYear);
-                    } catch (Exception e) {
-                        return false;
-                    }
-                })
-                .collect(Collectors.toList());
+        for (EmployeeDto employee : employees) {
+            // Kiểm tra nếu id của nhân viên không phải là -1
+            if (!employee.getId().equals("-1")) {
+                // Lấy danh sách RecognitionDto cho nhân viên này
+                List<RecognitionDto> recognitions = getEmployeeRecogni(String.valueOf(employee.getId()));
 
-        return TotalChamCong.builder()
-                .danhSach(filteredList)
-                .totalCong(filteredList.size() / 2.0f)// Tổng công = số bản ghi / 2
-                .totalLuong((float) (filteredList.size() * 500000 * Double.parseDouble(employee.getSalary_level()) / 2.0))
-                .build();
+                // Lọc các recognition theo tháng và năm
+                List<RecognitionDto> filteredList = recognitions.stream()
+                        .filter(r -> {
+                            try {
+                                LocalDateTime dateTime = LocalDateTime.parse(r.getCreated(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S"));
+                                return dateTime.getMonthValue() == Integer.parseInt(targetMonth)
+                                        && dateTime.getYear() == Integer.parseInt(targetYear);
+                            } catch (Exception e) {
+                                return false;
+                            }
+                        })
+                        .collect(Collectors.toList());
+
+                // Tính toán tổng công và tổng lương cho nhân viên
+                Float totalCong = filteredList.size() / 2.0f; // Hoặc (float) filteredList.size() / 2
+                Float baseSalary = 500000f; // Mức lương cơ bản cho mỗi ngày công
+                Float salaryLevel = Float.parseFloat(employee.getSalary_level()); // Hệ số lương
+                Float daysInMonth = 22f; // Giả sử 22 ngày làm việc trong tháng
+                Float bonus = 100000f; // Thưởng cố định
+                Float deductions = 150000f; // Giảm trừ (bảo hiểm, thuế, v.v.)
+
+                // Tính lương với công thức đã sửa
+                Float totalLuong = (totalCong ) * baseSalary * salaryLevel/10 + bonus - deductions;
+                if (totalLuong < 0) {
+                    totalLuong = 0f;
+                }
+
+                // Tạo DTO Dulieu cho từng nhân viên
+                TotalChamCong dulieu = TotalChamCong.builder()
+                        .id(String.valueOf(employee.getId()))
+                        .name(employee.getName())
+                        .danhSach(filteredList)
+                        .totalCong(totalCong)
+                        .totalLuong(totalLuong)
+                        .build();
+
+
+                result.add(dulieu);
+            }
+        }
+
+        return result; // Trả về danh sách các đối tượng TotalChamCong
     }
+
 
 
 }
