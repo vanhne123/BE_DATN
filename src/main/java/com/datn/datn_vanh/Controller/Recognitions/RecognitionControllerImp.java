@@ -175,7 +175,7 @@ public class RecognitionControllerImp implements RecognitionController {
     // API để client kết nối
     @Override
     public SseEmitter streamRecognitions() {
-        SseEmitter emitter = new SseEmitter();
+        SseEmitter emitter = new SseEmitter(0L);
         emitters.add(emitter);
 
         emitter.onCompletion(() -> removeEmitter(emitter));
@@ -185,6 +185,16 @@ public class RecognitionControllerImp implements RecognitionController {
         sendCachedEventsOnReconnect(emitter);
 
         return emitter;
+    }
+    @Scheduled(fixedRate = 1000)
+    public void sendHeartbeat() {
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event().name("heartbeat").data("ping"));
+            } catch (IOException e) {
+                removeEmitter(emitter);
+            }
+        }
     }
 
     // Xóa emitter khỏi danh sách khi có lỗi hoặc khi kết nối hoàn tất
@@ -208,10 +218,11 @@ public class RecognitionControllerImp implements RecognitionController {
         }
     }
 
-    @Scheduled(fixedRate = 1000)//sau 1s
+    private String lastSentTimestamp = "";
+
+    @Scheduled(fixedRate = 1000)
     public void checkNewRecognitions() {
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference(Reference.RECOGNITIONS_PATH);
-
         ref.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
@@ -224,16 +235,18 @@ public class RecognitionControllerImp implements RecognitionController {
                         String timestamp = timeSnap.getKey();
                         String imageUrl = (String) timeSnap.child("image_url").getValue();
 
-                        recognitions.add(new RecognitionData(employeeId, timestamp, imageUrl));
+                        // Chỉ lấy bản ghi mới
+                        if (timestamp.compareTo(lastSentTimestamp) > 0) {
+                            recognitions.add(new RecognitionData(employeeId, timestamp, imageUrl));
+                        }
                     }
                 }
 
-                // Sắp xếp giảm dần theo timestamp
-                recognitions = recognitions.stream()
-                        .sorted(Comparator.comparing(RecognitionData::getTimestamp))
-                        .collect(Collectors.toList());
+                // Sắp xếp tăng dần rồi gửi
+                recognitions.sort(Comparator.comparing(RecognitionData::getTimestamp));
                 for (RecognitionData data : recognitions) {
                     sendRecognitionEvent(data.getEmployeeId(), data.getTimestamp(), data.getImageUrl());
+                    lastSentTimestamp = data.getTimestamp(); // Cập nhật sau khi gửi
                 }
             }
 
@@ -243,6 +256,7 @@ public class RecognitionControllerImp implements RecognitionController {
             }
         });
     }
+
 
     @Override
     public TotalChamCong filterByMonthAndYear(String id,String targetMonth, String targetYear) {

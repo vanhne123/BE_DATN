@@ -2,6 +2,7 @@ package com.datn.datn_vanh.Controller.Recognitions;
 
 import com.datn.datn_vanh.Dto.Recognition.RecognitionDto;
 import com.datn.datn_vanh.Dto.Recognition.TotalChamCong;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -16,6 +17,7 @@ public interface RecognitionController {
     public List<RecognitionDto> getEmployeeRecogni(@RequestParam String employeeId);
 
     // Đăng ký kết nối SSE
+    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/recognition-stream")
     public SseEmitter streamRecognitions();
 
