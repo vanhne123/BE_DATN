@@ -2,6 +2,7 @@ package com.datn.datn_vanh.Controller.Recognitions;
 
 import com.datn.datn_vanh.Controller.Employee.EmployeeControllerImp;
 import com.datn.datn_vanh.Dto.Employee.EmployeeDto;
+import com.datn.datn_vanh.Dto.Recognition.CountChamCongDto;
 import com.datn.datn_vanh.Dto.Recognition.RecognitionData;
 import com.datn.datn_vanh.Dto.Recognition.RecognitionDto;
 import com.datn.datn_vanh.Dto.Recognition.TotalChamCong;
@@ -11,23 +12,36 @@ import com.datn.datn_vanh.Security.JwtUtil;
 import com.datn.datn_vanh.Service.RecognitionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.database.*;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @RestController
@@ -313,6 +327,137 @@ public class RecognitionControllerImp implements RecognitionController {
         return result; // Trả về danh sách các đối tượng TotalChamCong
     }
 
+    @Override
+    public List<CountChamCongDto> CountChamCong(String targetMonth, String targetYear) {
+        List<EmployeeDto> employees = employeeControllerImp.getAllEmployee(); // Lấy tất cả nhân viên
+        List<CountChamCongDto> result = new ArrayList<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S");
+        LocalTime standardStartTime = LocalTime.of(8, 30); // Giờ làm mặc định 08:30
+
+        for (EmployeeDto employee : employees) {
+            List<RecognitionDto> recognitions = getEmployeeRecogni(String.valueOf(employee.getId()));
+
+            // Lọc các recognition theo tháng và năm
+            List<RecognitionDto> filteredList = recognitions.stream()
+                    .filter(r -> {
+                        try {
+                            LocalDateTime dateTime = LocalDateTime.parse(r.getCreated(), formatter);
+                            return dateTime.getMonthValue() == Integer.parseInt(targetMonth)
+                                    && dateTime.getYear() == Integer.parseInt(targetYear);
+                        } catch (Exception e) {
+                            return false;
+                        }
+                    })
+                    .collect(Collectors.toList());
+
+            // Tính tổng công
+            Float totalCong = filteredList.size() / 2.0f;
+
+            // Tính số phút đi muộn
+            Map<LocalDate, LocalDateTime> earliestCheckinPerDay = new HashMap<>();
+            for (RecognitionDto r : filteredList) {
+                try {
+                    LocalDateTime dateTime = LocalDateTime.parse(r.getCreated(), formatter);
+                    LocalDate date = dateTime.toLocalDate();
+                    earliestCheckinPerDay.merge(date, dateTime,
+                            (oldVal, newVal) -> newVal.isBefore(oldVal) ? newVal : oldVal);
+                } catch (Exception e) {
+                    // Bỏ qua nếu lỗi
+                }
+            }
+
+            long totalLateMinutes = 0;
+            for (LocalDateTime checkInTime : earliestCheckinPerDay.values()) {
+                LocalTime actualTime = checkInTime.toLocalTime();
+                if (actualTime.isAfter(standardStartTime)) {
+                    totalLateMinutes += Duration.between(standardStartTime, actualTime).toMinutes();
+                }
+            }
+
+            // Tạo DTO kết quả
+            CountChamCongDto dulieu = CountChamCongDto.builder()
+                    .id(String.valueOf(employee.getId()))
+                    .name(employee.getName())
+                    .danhSach(filteredList)
+                    .totalCong(totalCong)
+                    .lateMinutes((float) totalLateMinutes)
+                    .build();
+
+            result.add(dulieu);
+        }
+
+        return result;
+    }
+
+
+    public ResponseEntity<ByteArrayResource> exportChamCongToExcel(String targetMonth, String targetYear) {
+        List<CountChamCongDto> data = CountChamCong(targetMonth, targetYear); // Gọi lại hàm tính toán đã có
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet1 = workbook.createSheet("Tổng hợp chấm công");
+        Sheet sheet2 = workbook.createSheet("Chi tiết chấm công");
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S");
+
+        // ===== Sheet 1: Tổng hợp chấm công =====
+        Row header1 = sheet1.createRow(0);
+        String[] headers1 = {"STT", "Mã NV", "Tên NV", "Tổng công", "Tổng phút đi muộn"};
+        for (int i = 0; i < headers1.length; i++) {
+            header1.createCell(i).setCellValue(headers1[i]);
+        }
+
+        AtomicInteger rowIdx1 = new AtomicInteger(1);
+        AtomicInteger stt1 = new AtomicInteger(1);
+        for (CountChamCongDto dto : data) {
+            Row row = sheet1.createRow(rowIdx1.getAndIncrement());
+            row.createCell(0).setCellValue(stt1.getAndIncrement());
+            row.createCell(1).setCellValue(dto.getId());
+            row.createCell(2).setCellValue(dto.getName());
+            row.createCell(3).setCellValue(dto.getTotalCong());
+            row.createCell(4).setCellValue(dto.getLateMinutes());
+        }
+
+        // ===== Sheet 2: Chi tiết chấm công =====
+        Row header2 = sheet2.createRow(0);
+        String[] headers2 = {"STT", "Mã NV", "Tên NV", "Ngày", "Giờ chấm công"};
+        for (int i = 0; i < headers2.length; i++) {
+            header2.createCell(i).setCellValue(headers2[i]);
+        }
+
+        AtomicInteger rowIdx2 = new AtomicInteger(1);
+        AtomicInteger stt2 = new AtomicInteger(1);
+        for (CountChamCongDto dto : data) {
+            for (RecognitionDto r : dto.getDanhSach()) {
+                try {
+                    LocalDateTime dateTime = LocalDateTime.parse(r.getCreated(), formatter);
+                    Row row = sheet2.createRow(rowIdx2.getAndIncrement());
+                    row.createCell(0).setCellValue(stt2.getAndIncrement());
+                    row.createCell(1).setCellValue(dto.getId());
+                    row.createCell(2).setCellValue(dto.getName());
+                    row.createCell(3).setCellValue(dateTime.toLocalDate().toString());
+                    row.createCell(4).setCellValue(dateTime.toLocalTime().toString());
+                } catch (Exception e) {
+                    // Bỏ qua nếu lỗi định dạng
+                }
+            }
+        }
+
+        // ===== Xuất file ra ByteArrayOutputStream =====
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            workbook.write(baos);
+            workbook.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // ===== Trả về file cho người dùng =====
+        ByteArrayResource resource = new ByteArrayResource(baos.toByteArray());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=ChamCong_" + targetMonth + "_" + targetYear + ".xlsx")
+                .header(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .body(resource);
+    }
 
 
 }

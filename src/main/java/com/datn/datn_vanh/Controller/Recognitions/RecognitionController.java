@@ -1,7 +1,10 @@
 package com.datn.datn_vanh.Controller.Recognitions;
 
+import com.datn.datn_vanh.Dto.Recognition.CountChamCongDto;
 import com.datn.datn_vanh.Dto.Recognition.RecognitionDto;
 import com.datn.datn_vanh.Dto.Recognition.TotalChamCong;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,4 +26,10 @@ public interface RecognitionController {
 
     @GetMapping("/getRecogniByMonthandYear")
     public List<TotalChamCong> filterByMonthAndYear(@RequestParam String targetMonth, @RequestParam String targetYear);
+
+    @GetMapping("/getCount")
+    public List<CountChamCongDto> CountChamCong(@RequestParam String targetMonth, @RequestParam String targetYear);
+
+    @GetMapping("/getCount_export")
+    public ResponseEntity<ByteArrayResource> exportChamCongToExcel(@RequestParam String targetMonth, @RequestParam String targetYear);
 }
