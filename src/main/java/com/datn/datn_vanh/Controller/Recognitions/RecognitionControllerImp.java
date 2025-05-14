@@ -452,9 +452,11 @@ public class RecognitionControllerImp implements RecognitionController {
 
         // ===== Trả về file cho người dùng =====
         ByteArrayResource resource = new ByteArrayResource(baos.toByteArray());
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=ChamCong_" + targetMonth + "_" + targetYear + ".xlsx")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=ChamCong_" + timestamp + ".xlsx")
                 .header(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 .body(resource);
     }
